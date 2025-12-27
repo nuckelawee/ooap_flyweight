@@ -1,0 +1,44 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "debug",
+            "binaryDir": "${sourceDir}/build/debug",
+            "generator": "Unix Makefiles",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_PREFIX_PATH": "~/Qt/6.8.0/gcc_64"
+            }
+        },
+        {
+            "name": "release",
+            "binaryDir": "${sourceDir}/build/release",
+            "generator": "Unix Makefiles",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_PREFIX_PATH": "~/Qt/6.8.0/gcc_64"
+            }
+        }
+
+    ],
+    "buildPresets": [
+        {
+            "name": "debug-build",
+            "configurePreset": "debug",
+            "targets": [
+                "all"
+            ],
+            "jobs": 0
+        },
+        {
+            "name": "release-build",
+            "configurePreset": "release",
+            "targets": [
+                "all"
+            ],
+            "jobs": 0
+        }
+    ]
+}
