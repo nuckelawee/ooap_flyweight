@@ -1,45 +1,40 @@
 #ifndef PARTICLE_H
 #define PARTICLE_H
 
-#include <QColor>
-#include <QString>
-
-enum class ParticleShape {
-  Circle,
-  Square,
-  Triangle
-};
+#include <memory>
+#include "particle_type.h"
 
 class Particle {
  public:
+  // С паттерном Flyweight: принимаем shared_ptr на ParticleType
   Particle(float x, float y, float vx, float vy,
-           const QColor& color, float radius, ParticleShape shape);
+           std::shared_ptr<ParticleType> type);
 
   void Update(float delta_time, float width, float height);
 
-  // Getters
+  // Getters for extrinsic state
   float x() const { return x_; }
   float y() const { return y_; }
   float vx() const { return vx_; }
   float vy() const { return vy_; }
-  QColor color() const { return color_; }
-  float radius() const { return radius_; }
-  ParticleShape shape() const { return shape_; }
+
+  // Getters for intrinsic state (через shared ParticleType)
+  QColor color() const { return type_->color(); }
+  float radius() const { return type_->radius(); }
+  ParticleShape shape() const { return type_->shape(); }
 
   // Setters for velocity
   void set_vx(float vx) { vx_ = vx; }
   void set_vy(float vy) { vy_ = vy; }
 
  private:
-  // Extrinsic state (unique per particle) - позиция и скорость
+  // Extrinsic state (unique per particle) - только позиция и скорость!
   float x_, y_;
   float vx_, vy_;
 
-  // Intrinsic state (could be shared) - цвет, размер, форма
-  // В версии БЕЗ flyweight каждая частица хранит эти данные
-  QColor color_;
-  float radius_;
-  ParticleShape shape_;
+  // Intrinsic state (shared via Flyweight pattern)
+  // ВАЖНО: Это shared_ptr, поэтому тысячи частиц могут указывать на один объект ParticleType!
+  std::shared_ptr<ParticleType> type_;
 
   // Physics constants
   static constexpr float kGravity = 200.0f;

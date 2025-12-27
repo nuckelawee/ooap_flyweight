@@ -1,4 +1,5 @@
 #include "particle_system.h"
+#include "particle_type_factory.h"
 #include <QRandomGenerator>
 #include <QDebug>
 
@@ -37,15 +38,16 @@ void ParticleSystem::stop() {
 
 void ParticleSystem::addParticles(int count) {
   QRandomGenerator* rng = QRandomGenerator::global();
+  ParticleTypeFactory& factory = ParticleTypeFactory::Instance();
 
-  // Predefined particle types (intrinsic state)
-  struct ParticleType {
+  // Predefined particle type parameters
+  struct TypeParams {
     QColor color;
     float radius;
     ParticleShape shape;
   };
 
-  std::vector<ParticleType> types = {
+  std::vector<TypeParams> type_params = {
     {QColor(220, 50, 50), 8.0f, ParticleShape::Circle},      // Dark red circles
     {QColor(50, 180, 50), 6.0f, ParticleShape::Square},      // Dark green squares
     {QColor(50, 50, 220), 10.0f, ParticleShape::Triangle},   // Dark blue triangles
@@ -60,13 +62,14 @@ void ParticleSystem::addParticles(int count) {
     float vx = -100.0f + rng->generateDouble() * 200.0f;
     float vy = -200.0f + rng->generateDouble() * 100.0f;  // Start with some upward velocity
 
-    // Random type
-    const auto& type = types[rng->bounded(static_cast<int>(types.size()))];
+    // Random type parameters
+    const auto& params = type_params[rng->bounded(static_cast<int>(type_params.size()))];
 
-    // ВАЖНО: Без flyweight каждая частица создает свою копию всех данных
-    particles_.push_back(std::make_unique<Particle>(
-      x, y, vx, vy, type.color, type.radius, type.shape
-    ));
+    // ВАЖНО: С Flyweight паттерном получаем shared ParticleType через фабрику
+    // Если такой тип уже существует, фабрика вернёт существующий объект!
+    auto particle_type = factory.GetParticleType(params.color, params.radius, params.shape);
+
+    particles_.push_back(std::make_unique<Particle>(x, y, vx, vy, particle_type));
   }
 
   CalculateMemoryUsage();
@@ -142,11 +145,24 @@ void ParticleSystem::UpdateMetrics() {
   }
 }
 
+int ParticleSystem::objectCount() const {
+  // С Flyweight: количество уникальных ParticleType объектов
+  return ParticleTypeFactory::Instance().GetTypeCount();
+}
+
 void ParticleSystem::CalculateMemoryUsage() {
   // Approximate memory usage calculation
-  // Без flyweight: каждая частица хранит все данные
-  size_t particle_size = sizeof(Particle);
-  size_t total_bytes = particles_.size() * (particle_size + sizeof(std::unique_ptr<Particle>));
+  // С Flyweight паттерном:
+  // - Каждая частица хранит только extrinsic state (x, y, vx, vy) + shared_ptr
+  // - ParticleType объекты (intrinsic state) разделяются между частицами
 
+  size_t particle_size = sizeof(Particle);  // x, y, vx, vy + shared_ptr
+  size_t particles_bytes = particles_.size() * (particle_size + sizeof(std::unique_ptr<Particle>));
+
+  // ParticleType objects (shared)
+  size_t type_size = sizeof(ParticleType);  // QColor + float + enum
+  size_t types_bytes = ParticleTypeFactory::Instance().GetTypeCount() * type_size;
+
+  size_t total_bytes = particles_bytes + types_bytes;
   memory_usage_mb_ = total_bytes / (1024.0 * 1024.0);
 }

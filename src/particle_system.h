@@ -30,7 +30,7 @@ class ParticleSystem : public QObject {
   int particleCount() const { return particles_.size(); }
   double fps() const { return current_fps_; }
   double memoryUsageMB() const { return memory_usage_mb_; }
-  int objectCount() const { return particles_.size(); }  // Без flyweight = количество частиц
+  int objectCount() const;  // С flyweight = количество ParticleType объектов
 
  signals:
   void particleCountChanged();

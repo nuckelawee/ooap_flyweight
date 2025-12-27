@@ -2,9 +2,8 @@
 #include <algorithm>
 
 Particle::Particle(float x, float y, float vx, float vy,
-                   const QColor& color, float radius, ParticleShape shape)
-    : x_(x), y_(y), vx_(vx), vy_(vy),
-      color_(color), radius_(radius), shape_(shape) {
+                   std::shared_ptr<ParticleType> type)
+    : x_(x), y_(y), vx_(vx), vy_(vy), type_(type) {
 }
 
 void Particle::Update(float delta_time, float width, float height) {
@@ -20,19 +19,20 @@ void Particle::Update(float delta_time, float width, float height) {
   vy_ *= kDamping;
 
   // Collision with walls
-  if (x_ - radius_ < 0) {
-    x_ = radius_;
+  float radius = type_->radius();
+  if (x_ - radius < 0) {
+    x_ = radius;
     vx_ = -vx_ * 0.8f;  // Energy loss on bounce
-  } else if (x_ + radius_ > width) {
-    x_ = width - radius_;
+  } else if (x_ + radius > width) {
+    x_ = width - radius;
     vx_ = -vx_ * 0.8f;
   }
 
-  if (y_ - radius_ < 0) {
-    y_ = radius_;
+  if (y_ - radius < 0) {
+    y_ = radius;
     vy_ = -vy_ * 0.8f;
-  } else if (y_ + radius_ > height) {
-    y_ = height - radius_;
+  } else if (y_ + radius > height) {
+    y_ = height - radius;
     vy_ = -vy_ * 0.8f;
   }
 }
