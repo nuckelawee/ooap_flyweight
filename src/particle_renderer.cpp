@@ -1,87 +1,50 @@
 #include "particle_renderer.h"
 #include "particle_system.h"
-#include "particle_type_factory.h"
 #include <QPainter>
-#include <QPainterPath>
+#include <QImage>
 
 ParticleRenderer::ParticleRenderer(QQuickItem* parent)
-    : QQuickPaintedItem(parent), particle_system_(nullptr) {
-  setRenderTarget(QQuickPaintedItem::FramebufferObject);
-  setPerformanceHint(QQuickPaintedItem::FastFBOResizing);
+    : QQuickPaintedItem(parent), _particleSystem(nullptr) {
+    setRenderTarget(QQuickPaintedItem::FramebufferObject);
+    setPerformanceHint(QQuickPaintedItem::FastFBOResizing);
 }
 
 void ParticleRenderer::setParticleSystem(ParticleSystem* system) {
-  if (particle_system_ == system) {
-    return;
-  }
+    if (_particleSystem == system) {
+        return;
+    }
 
-  particle_system_ = system;
-  ClearPixmapCache();  // Очищаем кэш при смене системы
-  emit particleSystemChanged();
+    _particleSystem = system;
+    emit particleSystemChanged();
 }
 
 void ParticleRenderer::paint(QPainter* painter) {
-  if (!particle_system_) {
-    return;
-  }
+    if (!_particleSystem) {
+        return;
+    }
 
-  painter->setRenderHint(QPainter::Antialiasing, true);
-  painter->fillRect(0, 0, width(), height(), QColor("#f5f5f5"));
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->fillRect(0, 0, width(), height(), QColor("#f5f5f5"));
 
-  // ПРЯМОЙ доступ к частицам - без копирования в QVariantList!
-  const auto& particles = particle_system_->particles();
+    const auto& particles = _particleSystem->particles();
 
-  for (const auto& particle : particles) {
-    // ОПТИМИЗАЦИЯ: Прямой доступ к ParticleType БЕЗ lookup в фабрике!
-    const ParticleType* particle_type = particle->type();
-    float radius = particle_type->radius();
+    for (const auto& particle : particles) {
+        const auto particle_type = particle->type();
+        float radius = particle_type->radius();
+        int w = particle_type->imageWidth();
+        int h = particle_type->imageHeight();
 
-    // Получаем QPixmap из кэша (или создаём новый) - только ОДИН lookup!
-    QPixmap pixmap = GetParticleTypePixmap(particle_type);
+        if (w <= 0 || h <= 0) {
+            continue;
+        }
 
-    // Быстрая отрисовка: просто копируем готовый QPixmap!
-    painter->drawPixmap(
-      QPointF(particle->x() - radius, particle->y() - radius),
-      pixmap
-    );
-  }
-}
+        // Создаём QImage-обёртку из shared raw данных ParticleType (Flyweight!)
+        QImage image(particle_type->pixelData().data(), w, h, QImage::Format_RGBA8888);
 
-QPixmap ParticleRenderer::GetParticleTypePixmap(const ParticleType* type) {
-  // Проверяем кэш
-  auto it = pixmap_cache_.find(type);
-  if (it != pixmap_cache_.end()) {
-    return it->second;
-  }
-
-  // Загружаем изображение из файла и масштабируем
-  QString image_path = type->image_path();
-  float radius = type->radius();
-  int size = static_cast<int>(radius * 2);
-
-  QPixmap original_pixmap(image_path);
-  if (original_pixmap.isNull()) {
-    // Если изображение не загрузилось, создаём красный квадрат-заглушку
-    QPixmap pixmap(size, size);
-    pixmap.fill(Qt::red);
-    pixmap_cache_[type] = pixmap;
-    return pixmap;
-  }
-
-  // ОПТИМИЗАЦИЯ: Используем FastTransformation - быстрее чем SmoothTransformation
-  // для небольших изображений разница в качестве незаметна
-  QPixmap scaled_pixmap = original_pixmap.scaled(
-    size, size,
-    Qt::KeepAspectRatio,
-    Qt::FastTransformation
-  );
-
-  // Сохраняем в кэш
-  pixmap_cache_[type] = scaled_pixmap;
-
-  return scaled_pixmap;
-}
-
-void ParticleRenderer::ClearPixmapCache() {
-  pixmap_cache_.clear();
+        // Рисуем в визуальном размере (radius*2), масштабируя из внутреннего разрешения
+        float displaySize = radius * 2;
+        QRectF targetRect(particle->x() - radius, particle->y() - radius,
+                          displaySize, displaySize);
+        painter->drawImage(targetRect, image);
+    }
 }

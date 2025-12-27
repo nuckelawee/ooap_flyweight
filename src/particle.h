@@ -5,42 +5,36 @@
 #include "particle_type.h"
 
 class Particle {
- public:
-  // С паттерном Flyweight: принимаем shared_ptr на ParticleType
-  Particle(float x, float y, float vx, float vy,
-           std::shared_ptr<ParticleType> type);
+public:
+    // С паттерном Flyweight: принимаем shared_ptr на ParticleType
+    Particle(float x, float y, float vx, float vy,
+             std::shared_ptr<ParticleType> type);
 
-  void Update(float delta_time, float width, float height);
+    void update(float delta_time, float width, float height);
 
-  // Getters for extrinsic state
-  float x() const { return x_; }
-  float y() const { return y_; }
-  float vx() const { return vx_; }
-  float vy() const { return vy_; }
+    // Getters for extrinsic state
+    float x() const { return _x; }
+    float y() const { return _y; }
+    float vx() const { return _vx; }
+    float vy() const { return _vy; }
 
-  // Getters for intrinsic state (через shared ParticleType)
-  QString image_path() const { return type_->image_path(); }
-  float radius() const { return type_->radius(); }
+    // Getters for intrinsic state (через shared ParticleType)
+    QString imagePath() const { return _type->imagePath(); }
+    float radius() const { return _type->radius(); }
 
-  // ВАЖНО: Прямой доступ к ParticleType для быстрого рендеринга
-  const ParticleType* type() const { return type_.get(); }
+    std::shared_ptr<ParticleType> type() const { return _type; }
 
-  // Setters for velocity
-  void set_vx(float vx) { vx_ = vx; }
-  void set_vy(float vy) { vy_ = vy; }
+    // Setters for velocity
+    void setVx(float vx) { _vx = vx; }
+    void setVy(float vy) { _vy = vy; }
 
- private:
-  // Extrinsic state (unique per particle) - только позиция и скорость!
-  float x_, y_;
-  float vx_, vy_;
+private:
+    // Extrinsic state (unique per particle) - только позиция и скорость!
+    float _x, _y;
+    float _vx, _vy;
 
-  // Intrinsic state (shared via Flyweight pattern)
-  // ВАЖНО: Это shared_ptr, поэтому тысячи частиц могут указывать на один объект ParticleType!
-  std::shared_ptr<ParticleType> type_;
-
-  // Physics constants
-  static constexpr float kGravity = 200.0f;
-  static constexpr float kDamping = 0.98f;
+    // Intrinsic state (shared via Flyweight pattern)
+    std::shared_ptr<ParticleType> _type;
 };
 
 #endif  // PARTICLE_H

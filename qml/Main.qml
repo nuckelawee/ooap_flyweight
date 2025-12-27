@@ -117,12 +117,6 @@ Window {
                             value: particleSystem.objectCount.toString()
                             valueColor: "#ffd93d"
                         }
-
-                        MetricRow {
-                            label: "Memory:"
-                            value: particleSystem.memoryUsageMB.toFixed(2) + " MB"
-                            valueColor: "#f38181"
-                        }
                     }
                 }
 

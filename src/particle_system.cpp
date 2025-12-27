@@ -3,178 +3,160 @@
 #include <QRandomGenerator>
 #include <QDebug>
 
+constexpr int kUpdateIntervalMs = 16;  // ~60 FPS
+constexpr int kFpsUpdateIntervalMs = 500;  // Update FPS every 500ms
+
 ParticleSystem::ParticleSystem(QObject* parent)
     : QObject(parent),
-      update_timer_(new QTimer(this)),
-      canvas_width_(800),
-      canvas_height_(600),
-      current_fps_(0.0),
-      memory_usage_mb_(0.0),
-      last_frame_time_(0),
-      frame_count_(0),
-      fps_update_time_(0) {
-  connect(update_timer_, &QTimer::timeout, this, &ParticleSystem::Update);
+      _updateTimer(new QTimer(this)),
+      _canvasWidth(800),
+      _canvasHeight(600),
+      _currentFps(0.0),
+      _memoryUsageMB(0.0),
+      _lastFrameTime(0),
+      _frameCount(0),
+      _fpsUpdateTime(0) {
+    connect(_updateTimer, &QTimer::timeout, this, &ParticleSystem::update);
 }
 
 ParticleSystem::~ParticleSystem() {
-  stop();
+    stop();
 }
 
 void ParticleSystem::start(int width, int height) {
-  canvas_width_ = width;
-  canvas_height_ = height;
+    _canvasWidth = width;
+    _canvasHeight = height;
 
-  if (!elapsed_timer_.isValid()) {
-    elapsed_timer_.start();
-    last_frame_time_ = elapsed_timer_.elapsed();
-    fps_update_time_ = last_frame_time_;
-    update_timer_->start(kUpdateIntervalMs);
-  }
+    if (!_elapsedTimer.isValid()) {
+        _elapsedTimer.start();
+        _lastFrameTime = _elapsedTimer.elapsed();
+        _fpsUpdateTime = _lastFrameTime;
+        _updateTimer->start(kUpdateIntervalMs);
+    }
 }
 
 void ParticleSystem::stop() {
-  update_timer_->stop();
+    _updateTimer->stop();
 }
 
 void ParticleSystem::addParticles(int count) {
-  QRandomGenerator* rng = QRandomGenerator::global();
-  ParticleTypeFactory& factory = ParticleTypeFactory::Instance();
+    QRandomGenerator* rng = QRandomGenerator::global();
+    ParticleTypeFactory& factory = ParticleTypeFactory::instance();
 
-  // Predefined particle type parameters - используем картинки из папки data/
-  struct TypeParams {
-    QString image_path;
-    float radius;
-  };
+    // Predefined particle type parameters - используем картинки из папки data/
+    struct TypeParams {
+        QString image_path;
+        float radius;
+    };
 
-  std::vector<TypeParams> type_params = {
-    {"data/blob.png", 15.0f},
-    {"data/leaflet.png", 12.0f},
-    {"data/snowflake1.png", 18.0f},
-    {"data/snowflake2.png", 14.0f},
-    {"data/snowflake3.png", 10.0f},
-  };
+    std::vector<TypeParams> type_params = {
+        {"data/blob.png", 15.0f},
+        {"data/leaflet.png", 12.0f},
+        {"data/snowflake1.png", 18.0f},
+        {"data/snowflake2.png", 14.0f},
+        {"data/snowflake3.png", 10.0f},
+    };
 
-  for (int i = 0; i < count; ++i) {
-    // Spawn particles across the entire canvas area
-    float x = 50.0f + rng->generateDouble() * (canvas_width_ - 100.0f);
-    float y = 50.0f + rng->generateDouble() * (canvas_height_ - 100.0f);
-    float vx = -100.0f + rng->generateDouble() * 200.0f;
-    float vy = -200.0f + rng->generateDouble() * 100.0f;  // Start with some upward velocity
+    for (int i = 0; i < count; ++i) {
+        // Spawn particles across the entire canvas area
+        float x = 50.0f + rng->generateDouble() * (_canvasWidth - 100.0f);
+        float y = 50.0f + rng->generateDouble() * (_canvasHeight - 100.0f);
+        float vx = -100.0f + rng->generateDouble() * 200.0f;
+        float vy = -200.0f + rng->generateDouble() * 100.0f;  // Start with some upward velocity
 
-    // Random type parameters
-    const auto& params = type_params[rng->bounded(static_cast<int>(type_params.size()))];
+        // Random type parameters
+        const auto& params = type_params[rng->bounded(static_cast<int>(type_params.size()))];
 
-    // ВАЖНО: С Flyweight паттерном получаем shared ParticleType через фабрику
-    // Если такой тип уже существует, фабрика вернёт существующий объект!
-    auto particle_type = factory.GetParticleType(params.image_path, params.radius);
+        // ВАЖНО: С Flyweight паттерном получаем shared ParticleType через фабрику
+        // Если такой тип уже существует, фабрика вернёт существующий объект!
+        auto particle_type = factory.getParticleType(params.image_path, params.radius);
 
-    particles_.push_back(std::make_unique<Particle>(x, y, vx, vy, particle_type));
-  }
+        _particles.push_back(std::make_unique<Particle>(x, y, vx, vy, particle_type));
+    }
 
-  CalculateMemoryUsage();
-  emit particleCountChanged();
-  emit objectCountChanged();
-  emit memoryUsageMBChanged();
+    emit particleCountChanged();
+    emit objectCountChanged();
 }
 
 void ParticleSystem::clear() {
-  particles_.clear();
-  CalculateMemoryUsage();
-  emit particleCountChanged();
-  emit objectCountChanged();
-  emit memoryUsageMBChanged();
+    _particles.clear();
+    emit particleCountChanged();
+    emit objectCountChanged();
 }
 
 void ParticleSystem::throwUpParticles() {
-  QRandomGenerator* rng = QRandomGenerator::global();
+    QRandomGenerator* rng = QRandomGenerator::global();
 
-  // Consider particles as "fallen" if they are in the bottom 20% of the canvas
-  float threshold_y = canvas_height_ * 0.8f;
+    // Consider particles as "fallen" if they are in the bottom 20% of the canvas
+    float threshold_y = _canvasHeight * 0.8f;
 
-  for (auto& particle : particles_) {
-    if (particle->y() > threshold_y) {
-      // Give particles a strong upward velocity
-      float new_vx = -80.0f + rng->generateDouble() * 160.0f;  // Random horizontal velocity
-      float new_vy = -300.0f - rng->generateDouble() * 200.0f;  // Strong upward velocity (-300 to -500)
+    for (auto& particle : _particles) {
+        if (particle->y() > threshold_y) {
+            // Give particles a strong upward velocity
+            float new_vx = -80.0f + rng->generateDouble() * 160.0f;  // Random horizontal velocity
+            float new_vy = -300.0f - rng->generateDouble() * 200.0f;  // Strong upward velocity (-300 to -500)
 
-      particle->set_vx(new_vx);
-      particle->set_vy(new_vy);
+            particle->setVx(new_vx);
+            particle->setVy(new_vy);
+        }
     }
-  }
 }
 
 QVariantList ParticleSystem::getParticleData() {
-  QVariantList data;
-  for (const auto& particle : particles_) {
-    QVariantMap particleData;
-    particleData["x"] = particle->x();
-    particleData["y"] = particle->y();
-    particleData["radius"] = particle->radius();
-    particleData["image_path"] = particle->image_path();
-    data.append(particleData);
-  }
-  return data;
+    QVariantList data;
+    for (const auto& particle : _particles) {
+        QVariantMap particleData;
+        particleData["x"] = particle->x();
+        particleData["y"] = particle->y();
+        particleData["radius"] = particle->radius();
+        particleData["image_path"] = particle->imagePath();
+        data.append(particleData);
+    }
+    return data;
 }
 
 QVariantList ParticleSystem::getParticleTypes() {
-  QVariantList types;
-  auto all_types = ParticleTypeFactory::Instance().GetAllTypes();
+    QVariantList types;
+    auto all_types = ParticleTypeFactory::instance().getAllTypes();
 
-  for (const auto& type : all_types) {
-    QVariantMap typeData;
-    typeData["image_path"] = type->image_path();
-    typeData["radius"] = type->radius();
-    types.append(typeData);
-  }
+    for (const auto& type : all_types) {
+        QVariantMap typeData;
+        typeData["image_path"] = type->imagePath();
+        typeData["radius"] = type->radius();
+        types.append(typeData);
+    }
 
-  return types;
+    return types;
 }
 
-void ParticleSystem::Update() {
-  qint64 current_time = elapsed_timer_.elapsed();
-  float delta_time = (current_time - last_frame_time_) / 1000.0f;
-  last_frame_time_ = current_time;
+void ParticleSystem::update() {
+    qint64 current_time = _elapsedTimer.elapsed();
+    float delta_time = (current_time - _lastFrameTime) / 1000.0f;
+    _lastFrameTime = current_time;
 
-  // Update all particles
-  for (auto& particle : particles_) {
-    particle->Update(delta_time, canvas_width_, canvas_height_);
-  }
+    // Update all particles
+    for (auto& particle : _particles) {
+        particle->update(delta_time, _canvasWidth, _canvasHeight);
+    }
 
-  // Update metrics
-  UpdateMetrics();
+    // Update metrics
+    updateMetrics();
 }
 
-void ParticleSystem::UpdateMetrics() {
-  frame_count_++;
-  qint64 current_time = elapsed_timer_.elapsed();
+void ParticleSystem::updateMetrics() {
+    _frameCount++;
+    qint64 current_time = _elapsedTimer.elapsed();
 
-  if (current_time - fps_update_time_ >= kFpsUpdateIntervalMs) {
-    double elapsed_seconds = (current_time - fps_update_time_) / 1000.0;
-    current_fps_ = frame_count_ / elapsed_seconds;
-    frame_count_ = 0;
-    fps_update_time_ = current_time;
-    emit fpsChanged();
-  }
+    if (current_time - _fpsUpdateTime >= kFpsUpdateIntervalMs) {
+        double elapsed_seconds = (current_time - _fpsUpdateTime) / 1000.0;
+        _currentFps = _frameCount / elapsed_seconds;
+        _frameCount = 0;
+        _fpsUpdateTime = current_time;
+        emit fpsChanged();
+    }
 }
 
 int ParticleSystem::objectCount() const {
-  // С Flyweight: количество уникальных ParticleType объектов
-  return ParticleTypeFactory::Instance().GetTypeCount();
-}
-
-void ParticleSystem::CalculateMemoryUsage() {
-  // Approximate memory usage calculation
-  // С Flyweight паттерном:
-  // - Каждая частица хранит только extrinsic state (x, y, vx, vy) + shared_ptr
-  // - ParticleType объекты (intrinsic state) разделяются между частицами
-
-  size_t particle_size = sizeof(Particle);  // x, y, vx, vy + shared_ptr
-  size_t particles_bytes = particles_.size() * (particle_size + sizeof(std::unique_ptr<Particle>));
-
-  // ParticleType objects (shared)
-  size_t type_size = sizeof(ParticleType);  // QColor + float + enum
-  size_t types_bytes = ParticleTypeFactory::Instance().GetTypeCount() * type_size;
-
-  size_t total_bytes = particles_bytes + types_bytes;
-  memory_usage_mb_ = total_bytes / (1024.0 * 1024.0);
+    // С Flyweight: количество уникальных ParticleType объектов
+    return ParticleTypeFactory::instance().getTypeCount();
 }

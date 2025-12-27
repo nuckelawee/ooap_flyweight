@@ -1,38 +1,41 @@
 #include "particle.h"
-#include <algorithm>
+
+// Physics constants
+constexpr float kGravity = 200.0f;
+constexpr float kDamping = 0.98f;
 
 Particle::Particle(float x, float y, float vx, float vy,
                    std::shared_ptr<ParticleType> type)
-    : x_(x), y_(y), vx_(vx), vy_(vy), type_(type) {
+    : _x(x), _y(y), _vx(vx), _vy(vy), _type(type) {
 }
 
-void Particle::Update(float delta_time, float width, float height) {
-  // Apply gravity
-  vy_ += kGravity * delta_time;
+void Particle::update(float delta_time, float width, float height) {
+    // Apply gravity
+    _vy += kGravity * delta_time;
 
-  // Update position
-  x_ += vx_ * delta_time;
-  y_ += vy_ * delta_time;
+    // Update position
+    _x += _vx * delta_time;
+    _y += _vy * delta_time;
 
-  // Apply damping
-  vx_ *= kDamping;
-  vy_ *= kDamping;
+    // Apply damping
+    _vx *= kDamping;
+    _vy *= kDamping;
 
-  // Collision with walls
-  float radius = type_->radius();
-  if (x_ - radius < 0) {
-    x_ = radius;
-    vx_ = -vx_ * 0.8f;  // Energy loss on bounce
-  } else if (x_ + radius > width) {
-    x_ = width - radius;
-    vx_ = -vx_ * 0.8f;
-  }
+    // Collision with walls
+    float radius = _type->radius();
+    if (_x - radius < 0) {
+        _x = radius;
+        _vx = -_vx * 0.8f;  // Energy loss on bounce
+    } else if (_x + radius > width) {
+        _x = width - radius;
+        _vx = -_vx * 0.8f;
+    }
 
-  if (y_ - radius < 0) {
-    y_ = radius;
-    vy_ = -vy_ * 0.8f;
-  } else if (y_ + radius > height) {
-    y_ = height - radius;
-    vy_ = -vy_ * 0.8f;
-  }
+    if (_y - radius < 0) {
+        _y = radius;
+        _vy = -_vy * 0.8f;
+    } else if (_y + radius > height) {
+        _y = height - radius;
+        _vy = -_vy * 0.8f;
+    }
 }
