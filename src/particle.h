@@ -2,39 +2,44 @@
 #define PARTICLE_H
 
 #include <QString>
+#include <vector>
+#include <cstdint>
 
 class Particle {
- public:
-  Particle(float x, float y, float vx, float vy,
-           const QString& image_path, float radius);
+public:
+    Particle(float x, float y, float vx, float vy,
+             const QString& image_path, float radius);
 
-  void Update(float delta_time, float width, float height);
+    void update(float delta_time, float width, float height);
 
-  // Getters
-  float x() const { return x_; }
-  float y() const { return y_; }
-  float vx() const { return vx_; }
-  float vy() const { return vy_; }
-  QString image_path() const { return image_path_; }
-  float radius() const { return radius_; }
+    // Getters
+    float x() const { return _x; }
+    float y() const { return _y; }
+    float vx() const { return _vx; }
+    float vy() const { return _vy; }
+    QString imagePath() const { return _imagePath; }
+    float radius() const { return _radius; }
+    const std::vector<uint8_t>& pixelData() const { return _pixelData; }
+    int imageWidth() const { return _imageWidth; }
+    int imageHeight() const { return _imageHeight; }
 
-  // Setters for velocity
-  void set_vx(float vx) { vx_ = vx; }
-  void set_vy(float vy) { vy_ = vy; }
+    // Setters for velocity
+    void setVx(float vx) { _vx = vx; }
+    void setVy(float vy) { _vy = vy; }
 
- private:
-  // Extrinsic state (unique per particle) - позиция и скорость
-  float x_, y_;
-  float vx_, vy_;
+private:
+    // Extrinsic state (unique per particle) - позиция и скорость
+    float _x, _y;
+    float _vx, _vy;
 
-  // Intrinsic state (could be shared) - путь к изображению и размер
-  // В версии БЕЗ flyweight каждая частица хранит эти данные (дублирование!)
-  QString image_path_;
-  float radius_;
+    QString _imagePath;
+    float _radius;
 
-  // Physics constants
-  static constexpr float kGravity = 200.0f;
-  static constexpr float kDamping = 0.98f;
+    // Raw pixel data — БЕЗ implicit sharing!
+    // Каждая частица хранит свою ПОЛНУЮ копию пиксельных данных
+    std::vector<uint8_t> _pixelData;
+    int _imageWidth;
+    int _imageHeight;
 };
 
 #endif  // PARTICLE_H

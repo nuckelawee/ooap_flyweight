@@ -57,6 +57,4 @@ build/*
 .nfs/*
 
 compile_commands.json
-build.sh
-CLAUDE.md
 CMakeUserPresets.json

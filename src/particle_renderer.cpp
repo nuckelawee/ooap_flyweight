@@ -1,70 +1,49 @@
 #include "particle_renderer.h"
 #include "particle_system.h"
 #include <QPainter>
+#include <QImage>
 
 ParticleRenderer::ParticleRenderer(QQuickItem* parent)
-    : QQuickPaintedItem(parent), particle_system_(nullptr) {
-  setRenderTarget(QQuickPaintedItem::FramebufferObject);
-  setPerformanceHint(QQuickPaintedItem::FastFBOResizing);
+    : QQuickPaintedItem(parent), _particleSystem(nullptr) {
+    setRenderTarget(QQuickPaintedItem::FramebufferObject);
+    setPerformanceHint(QQuickPaintedItem::FastFBOResizing);
 }
 
 void ParticleRenderer::setParticleSystem(ParticleSystem* system) {
-  if (particle_system_ == system) {
-    return;
-  }
+    if (_particleSystem == system) {
+        return;
+    }
 
-  particle_system_ = system;
-  emit particleSystemChanged();
+    _particleSystem = system;
+    emit particleSystemChanged();
 }
 
 void ParticleRenderer::paint(QPainter* painter) {
-  if (!particle_system_) {
-    return;
-  }
+    if (!_particleSystem) {
+        return;
+    }
 
-  painter->setRenderHint(QPainter::Antialiasing, true);
-  painter->fillRect(0, 0, width(), height(), QColor("#f5f5f5"));
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->fillRect(0, 0, width(), height(), QColor("#f5f5f5"));
 
-  // ПРЯМОЙ доступ к частицам - без копирования в QVariantList!
-  const auto& particles = particle_system_->particles();
+    const auto& particles = _particleSystem->particles();
 
-  for (const auto& particle : particles) {
-    // БЕЗ Flyweight: каждая частица хранит свой image_path (дублирование!)
-    QString image_path = particle->image_path();
-    float radius = particle->radius();
+    for (const auto& particle : particles) {
+        float radius = particle->radius();
+        int w = particle->imageWidth();
+        int h = particle->imageHeight();
 
-    // Получаем QPixmap из кэша (или создаём новый)
-    // Кэшируем по комбинации path+radius вместо указателя на ParticleType
-    QPixmap pixmap = GetPixmap(image_path, radius);
+        if (w <= 0 || h <= 0) {
+            continue;
+        }
 
-    // Быстрая отрисовка: просто копируем готовый QPixmap!
-    painter->drawPixmap(
-      QPointF(particle->x() - radius, particle->y() - radius),
-      pixmap
-    );
-  }
-}
+        // Создаём QImage-обёртку из raw данных частицы для отрисовки
+        QImage image(particle->pixelData().data(), w, h, QImage::Format_RGBA8888);
 
-QPixmap ParticleRenderer::GetPixmap(const QString& image_path, float radius) {
-  // БЕЗ FLYWEIGHT: КАЖДЫЙ РАЗ загружаем изображение заново!
-  // Это ОЧЕНЬ медленно - для каждой частицы из 5000 загружаем файл и масштабируем!
-
-  int size = static_cast<int>(radius * 2);
-
-  QPixmap original_pixmap(image_path);
-  if (original_pixmap.isNull()) {
-    // Если изображение не загрузилось, создаём красный квадрат-заглушку
-    QPixmap pixmap(size, size);
-    pixmap.fill(Qt::red);
-    return pixmap;
-  }
-
-  // МЕДЛЕННАЯ операция: масштабирование для КАЖДОЙ частицы!
-  QPixmap scaled_pixmap = original_pixmap.scaled(
-    size, size,
-    Qt::KeepAspectRatio,
-    Qt::SmoothTransformation  // Используем качественное, но медленное масштабирование
-  );
-
-  return scaled_pixmap;
+        // Рисуем в визуальном размере (radius*2), масштабируя из внутреннего разрешения
+        float displaySize = radius * 2;
+        QRectF targetRect(particle->x() - radius, particle->y() - radius,
+                          displaySize, displaySize);
+        painter->drawImage(targetRect, image);
+    }
 }
