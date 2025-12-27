@@ -40,19 +40,18 @@ void ParticleSystem::addParticles(int count) {
   QRandomGenerator* rng = QRandomGenerator::global();
   ParticleTypeFactory& factory = ParticleTypeFactory::Instance();
 
-  // Predefined particle type parameters
+  // Predefined particle type parameters - используем картинки из папки data/
   struct TypeParams {
-    QColor color;
+    QString image_path;
     float radius;
-    ParticleShape shape;
   };
 
   std::vector<TypeParams> type_params = {
-    {QColor(220, 50, 50), 8.0f, ParticleShape::Circle},      // Dark red circles
-    {QColor(50, 180, 50), 6.0f, ParticleShape::Square},      // Dark green squares
-    {QColor(50, 50, 220), 10.0f, ParticleShape::Triangle},   // Dark blue triangles
-    {QColor(200, 180, 0), 7.0f, ParticleShape::Circle},      // Dark yellow circles
-    {QColor(180, 50, 180), 9.0f, ParticleShape::Square},     // Dark magenta squares
+    {"data/blob.png", 15.0f},
+    {"data/leaflet.png", 12.0f},
+    {"data/snowflake1.png", 18.0f},
+    {"data/snowflake2.png", 14.0f},
+    {"data/snowflake3.png", 10.0f},
   };
 
   for (int i = 0; i < count; ++i) {
@@ -67,7 +66,7 @@ void ParticleSystem::addParticles(int count) {
 
     // ВАЖНО: С Flyweight паттерном получаем shared ParticleType через фабрику
     // Если такой тип уже существует, фабрика вернёт существующий объект!
-    auto particle_type = factory.GetParticleType(params.color, params.radius, params.shape);
+    auto particle_type = factory.GetParticleType(params.image_path, params.radius);
 
     particles_.push_back(std::make_unique<Particle>(x, y, vx, vy, particle_type));
   }
@@ -111,8 +110,7 @@ QVariantList ParticleSystem::getParticleData() {
     particleData["x"] = particle->x();
     particleData["y"] = particle->y();
     particleData["radius"] = particle->radius();
-    particleData["color"] = particle->color();
-    particleData["shape"] = static_cast<int>(particle->shape());
+    particleData["image_path"] = particle->image_path();
     data.append(particleData);
   }
   return data;
@@ -124,9 +122,8 @@ QVariantList ParticleSystem::getParticleTypes() {
 
   for (const auto& type : all_types) {
     QVariantMap typeData;
-    typeData["color"] = type->color();
+    typeData["image_path"] = type->image_path();
     typeData["radius"] = type->radius();
-    typeData["shape"] = static_cast<int>(type->shape());
     types.append(typeData);
   }
 

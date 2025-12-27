@@ -1,30 +1,22 @@
 #ifndef PARTICLE_TYPE_H
 #define PARTICLE_TYPE_H
 
-#include <QColor>
-
-enum class ParticleShape {
-  Circle,
-  Square,
-  Triangle
-};
+#include <QString>
 
 // Flyweight class - хранит intrinsic state (разделяемое состояние)
 // Один объект ParticleType может использоваться тысячами частиц
 class ParticleType {
  public:
-  ParticleType(const QColor& color, float radius, ParticleShape shape);
+  ParticleType(const QString& image_path, float radius);
 
   // Getters для intrinsic state
-  QColor color() const { return color_; }
+  QString image_path() const { return image_path_; }
   float radius() const { return radius_; }
-  ParticleShape shape() const { return shape_; }
 
  private:
   // Intrinsic state - данные, которые разделяются между множеством частиц
-  QColor color_;
-  float radius_;
-  ParticleShape shape_;
+  QString image_path_;  // Путь к файлу изображения
+  float radius_;        // Размер частицы
 };
 
 #endif  // PARTICLE_TYPE_H

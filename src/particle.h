@@ -19,9 +19,11 @@ class Particle {
   float vy() const { return vy_; }
 
   // Getters for intrinsic state (через shared ParticleType)
-  QColor color() const { return type_->color(); }
+  QString image_path() const { return type_->image_path(); }
   float radius() const { return type_->radius(); }
-  ParticleShape shape() const { return type_->shape(); }
+
+  // ВАЖНО: Прямой доступ к ParticleType для быстрого рендеринга
+  const ParticleType* type() const { return type_.get(); }
 
   // Setters for velocity
   void set_vx(float vx) { vx_ = vx; }

@@ -8,9 +8,9 @@ ParticleTypeFactory& ParticleTypeFactory::Instance() {
 }
 
 std::shared_ptr<ParticleType> ParticleTypeFactory::GetParticleType(
-    const QColor& color, float radius, ParticleShape shape) {
+    const QString& image_path, float radius) {
   // Генерируем уникальный ключ для этой комбинации параметров
-  std::string key = GenerateKey(color, radius, shape);
+  std::string key = GenerateKey(image_path, radius);
 
   // Проверяем, существует ли уже такой тип
   auto it = particle_types_.find(key);
@@ -20,7 +20,7 @@ std::shared_ptr<ParticleType> ParticleTypeFactory::GetParticleType(
   }
 
   // Создаём новый ParticleType только если такой комбинации ещё не было
-  auto new_type = std::make_shared<ParticleType>(color, radius, shape);
+  auto new_type = std::make_shared<ParticleType>(image_path, radius);
   particle_types_[key] = new_type;
   return new_type;
 }
@@ -33,14 +33,10 @@ std::vector<std::shared_ptr<ParticleType>> ParticleTypeFactory::GetAllTypes() co
   return types;
 }
 
-std::string ParticleTypeFactory::GenerateKey(const QColor& color,
-                                              float radius,
-                                              ParticleShape shape) const {
+std::string ParticleTypeFactory::GenerateKey(const QString& image_path,
+                                              float radius) const {
   std::ostringstream oss;
-  oss << color.red() << "_"
-      << color.green() << "_"
-      << color.blue() << "_"
-      << std::fixed << std::setprecision(2) << radius << "_"
-      << static_cast<int>(shape);
+  oss << image_path.toStdString() << "_"
+      << std::fixed << std::setprecision(2) << radius;
   return oss.str();
 }

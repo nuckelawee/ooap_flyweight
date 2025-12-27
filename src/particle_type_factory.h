@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <QString>
 #include "particle_type.h"
 
 // Flyweight Factory - управляет созданием и хранением shared ParticleType объектов
@@ -11,9 +12,8 @@
 class ParticleTypeFactory {
  public:
   // Получить ParticleType (создаст новый только если такой комбинации ещё нет)
-  std::shared_ptr<ParticleType> GetParticleType(const QColor& color,
-                                                 float radius,
-                                                 ParticleShape shape);
+  std::shared_ptr<ParticleType> GetParticleType(const QString& image_path,
+                                                 float radius);
 
   // Получить все созданные ParticleType объекты
   std::vector<std::shared_ptr<ParticleType>> GetAllTypes() const;
@@ -28,7 +28,7 @@ class ParticleTypeFactory {
   ParticleTypeFactory() = default;
 
   // Генерирует уникальный ключ для комбинации параметров
-  std::string GenerateKey(const QColor& color, float radius, ParticleShape shape) const;
+  std::string GenerateKey(const QString& image_path, float radius) const;
 
   // Хранилище всех созданных ParticleType объектов
   // Ключ - уникальная строка из параметров, значение - shared_ptr на ParticleType

@@ -6,14 +6,13 @@
 #include <map>
 #include <memory>
 #include "particle_type.h"
-#include "particle_system.h"  // Полный include для Q_PROPERTY
+#include "particle_system.h"
 
-// QQuickPaintedItem - рендеринг в C++ с QPainter (намного быстрее чем QML Canvas!)
 class ParticleRenderer : public QQuickPaintedItem {
   Q_OBJECT
   Q_PROPERTY(ParticleSystem* particleSystem READ particleSystem WRITE setParticleSystem NOTIFY particleSystemChanged)
 
- public:
+public:
   explicit ParticleRenderer(QQuickItem* parent = nullptr);
 
   void paint(QPainter* painter) override;
@@ -21,17 +20,15 @@ class ParticleRenderer : public QQuickPaintedItem {
   ParticleSystem* particleSystem() const { return particle_system_; }
   void setParticleSystem(ParticleSystem* system);
 
- signals:
+signals:
   void particleSystemChanged();
 
- private:
-  // Кэш QPixmap для каждого уникального ParticleType (Flyweight rendering!)
+private:
   QPixmap GetParticleTypePixmap(const ParticleType* type);
   void ClearPixmapCache();
 
+private:
   ParticleSystem* particle_system_;
-
-  // Кэш: ParticleType* -> QPixmap
   std::map<const ParticleType*, QPixmap> pixmap_cache_;
 };
 
