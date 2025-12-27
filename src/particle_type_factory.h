@@ -15,6 +15,9 @@ class ParticleTypeFactory {
                                                  float radius,
                                                  ParticleShape shape);
 
+  // Получить все созданные ParticleType объекты
+  std::vector<std::shared_ptr<ParticleType>> GetAllTypes() const;
+
   // Статистика
   int GetTypeCount() const { return particle_types_.size(); }
 

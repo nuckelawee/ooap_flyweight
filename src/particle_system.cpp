@@ -118,6 +118,21 @@ QVariantList ParticleSystem::getParticleData() {
   return data;
 }
 
+QVariantList ParticleSystem::getParticleTypes() {
+  QVariantList types;
+  auto all_types = ParticleTypeFactory::Instance().GetAllTypes();
+
+  for (const auto& type : all_types) {
+    QVariantMap typeData;
+    typeData["color"] = type->color();
+    typeData["radius"] = type->radius();
+    typeData["shape"] = static_cast<int>(type->shape());
+    types.append(typeData);
+  }
+
+  return types;
+}
+
 void ParticleSystem::Update() {
   qint64 current_time = elapsed_timer_.elapsed();
   float delta_time = (current_time - last_frame_time_) / 1000.0f;

@@ -26,11 +26,15 @@ class ParticleSystem : public QObject {
   Q_INVOKABLE void clear();
   Q_INVOKABLE void throwUpParticles();
   Q_INVOKABLE QVariantList getParticleData();
+  Q_INVOKABLE QVariantList getParticleTypes();  // Получить все уникальные ParticleType
 
   int particleCount() const { return particles_.size(); }
   double fps() const { return current_fps_; }
   double memoryUsageMB() const { return memory_usage_mb_; }
   int objectCount() const;  // С flyweight = количество ParticleType объектов
+
+  // Прямой доступ к частицам для ParticleRenderer (без копирования!)
+  const std::vector<std::unique_ptr<Particle>>& particles() const { return particles_; }
 
  signals:
   void particleCountChanged();

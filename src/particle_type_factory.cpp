@@ -25,6 +25,14 @@ std::shared_ptr<ParticleType> ParticleTypeFactory::GetParticleType(
   return new_type;
 }
 
+std::vector<std::shared_ptr<ParticleType>> ParticleTypeFactory::GetAllTypes() const {
+  std::vector<std::shared_ptr<ParticleType>> types;
+  for (const auto& pair : particle_types_) {
+    types.push_back(pair.second);
+  }
+  return types;
+}
+
 std::string ParticleTypeFactory::GenerateKey(const QColor& color,
                                               float radius,
                                               ParticleShape shape) const {

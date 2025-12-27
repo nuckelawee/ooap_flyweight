@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import ParticleSystem 1.0
+import ParticleRenderer 1.0
 
 Window {
     id: root
@@ -18,176 +19,32 @@ Window {
         anchors.fill: parent
         spacing: 0
 
-        // Main canvas area
-        Rectangle {
+        // Main rendering area - C++ QPainter renderer (FAST!)
+        ParticleRenderer {
+            id: renderer
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: "#f5f5f5"
+            particleSystem: particleSystem
 
-            // Pre-rendered offscreen canvases для ParticleTypes (Flyweight rendering!)
-            Item {
-                id: particleTypeCanvases
-                visible: false
-
-                // Каждый Canvas pre-renders один ParticleType
-                Canvas {
-                    id: redCircle
-                    width: 24; height: 24
-                    onPaint: {
-                        var ctx = getContext("2d");
-                        ctx.fillStyle = Qt.rgba(220/255, 50/255, 50/255, 1);
-                        ctx.strokeStyle = Qt.darker(Qt.rgba(220/255, 50/255, 50/255, 1), 1.5);
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.arc(12, 12, 8, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.stroke();
-                    }
-                    Component.onCompleted: requestPaint()
-                }
-
-                Canvas {
-                    id: greenSquare
-                    width: 20; height: 20
-                    onPaint: {
-                        var ctx = getContext("2d");
-                        ctx.fillStyle = Qt.rgba(50/255, 180/255, 50/255, 1);
-                        ctx.strokeStyle = Qt.darker(Qt.rgba(50/255, 180/255, 50/255, 1), 1.5);
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.rect(4, 4, 12, 12);
-                        ctx.fill();
-                        ctx.stroke();
-                    }
-                    Component.onCompleted: requestPaint()
-                }
-
-                Canvas {
-                    id: blueTriangle
-                    width: 28; height: 28
-                    onPaint: {
-                        var ctx = getContext("2d");
-                        ctx.fillStyle = Qt.rgba(50/255, 50/255, 220/255, 1);
-                        ctx.strokeStyle = Qt.darker(Qt.rgba(50/255, 50/255, 220/255, 1), 1.5);
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.moveTo(14, 4);
-                        ctx.lineTo(4, 24);
-                        ctx.lineTo(24, 24);
-                        ctx.closePath();
-                        ctx.fill();
-                        ctx.stroke();
-                    }
-                    Component.onCompleted: requestPaint()
-                }
-
-                Canvas {
-                    id: yellowCircle
-                    width: 22; height: 22
-                    onPaint: {
-                        var ctx = getContext("2d");
-                        ctx.fillStyle = Qt.rgba(200/255, 180/255, 0, 1);
-                        ctx.strokeStyle = Qt.darker(Qt.rgba(200/255, 180/255, 0, 1), 1.5);
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.arc(11, 11, 7, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.stroke();
-                    }
-                    Component.onCompleted: requestPaint()
-                }
-
-                Canvas {
-                    id: magentaSquare
-                    width: 26; height: 26
-                    onPaint: {
-                        var ctx = getContext("2d");
-                        ctx.fillStyle = Qt.rgba(180/255, 50/255, 180/255, 1);
-                        ctx.strokeStyle = Qt.darker(Qt.rgba(180/255, 50/255, 180/255, 1), 1.5);
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.rect(4, 4, 18, 18);
-                        ctx.fill();
-                        ctx.stroke();
-                    }
-                    Component.onCompleted: requestPaint()
+            onWidthChanged: {
+                if (width > 0 && height > 0) {
+                    particleSystem.start(width, height);
                 }
             }
 
-            Canvas {
-                id: canvas
-                anchors.fill: parent
-
-                onWidthChanged: {
-                    if (width > 0 && height > 0) {
-                        particleSystem.start(width, height);
-                    }
+            onHeightChanged: {
+                if (width > 0 && height > 0) {
+                    particleSystem.start(width, height);
                 }
+            }
 
-                onHeightChanged: {
-                    if (width > 0 && height > 0) {
-                        particleSystem.start(width, height);
-                    }
-                }
-
-                // Получить pre-rendered canvas для ParticleType
-                function getParticleTypeCanvas(color, radius, shape) {
-                    // Сопоставляем с pre-rendered canvases
-                    var r = color.r * 255;
-                    var g = color.g * 255;
-                    var b = color.b * 255;
-
-                    // Red circle
-                    if (Math.abs(r - 220) < 5 && Math.abs(g - 50) < 5 && Math.abs(b - 50) < 5 && shape === 0) {
-                        return {canvas: redCircle, offsetX: 12, offsetY: 12};
-                    }
-                    // Green square
-                    if (Math.abs(r - 50) < 5 && Math.abs(g - 180) < 5 && Math.abs(b - 50) < 5 && shape === 1) {
-                        return {canvas: greenSquare, offsetX: 10, offsetY: 10};
-                    }
-                    // Blue triangle
-                    if (Math.abs(r - 50) < 5 && Math.abs(g - 50) < 5 && Math.abs(b - 220) < 5 && shape === 2) {
-                        return {canvas: blueTriangle, offsetX: 14, offsetY: 14};
-                    }
-                    // Yellow circle
-                    if (Math.abs(r - 200) < 5 && Math.abs(g - 180) < 5 && b < 5 && shape === 0) {
-                        return {canvas: yellowCircle, offsetX: 11, offsetY: 11};
-                    }
-                    // Magenta square
-                    if (Math.abs(r - 180) < 5 && Math.abs(g - 50) < 5 && Math.abs(b - 180) < 5 && shape === 1) {
-                        return {canvas: magentaSquare, offsetX: 13, offsetY: 13};
-                    }
-
-                    return null;
-                }
-
-                onPaint: {
-                    var ctx = getContext("2d");
-                    ctx.clearRect(0, 0, width, height);
-
-                    var particles = particleSystem.getParticleData();
-
-                    // FLYWEIGHT RENDERING: используем pre-rendered изображения!
-                    for (var i = 0; i < particles.length; i++) {
-                        var p = particles[i];
-                        var typeCanvas = getParticleTypeCanvas(p.color, p.radius, p.shape);
-
-                        if (typeCanvas && typeCanvas.canvas.available) {
-                            // Быстрая отрисовка: копируем готовое изображение!
-                            ctx.drawImage(typeCanvas.canvas,
-                                         p.x - typeCanvas.offsetX,
-                                         p.y - typeCanvas.offsetY);
-                        }
-                    }
-                }
-
-                Timer {
-                    id: renderTimer
-                    interval: 16
-                    running: false
-                    repeat: true
-                    onTriggered: canvas.requestPaint()
-                }
+            // Обновляем рендер каждый кадр
+            Timer {
+                id: renderTimer
+                interval: 16  // ~60 FPS
+                running: false
+                repeat: true
+                onTriggered: renderer.update()
             }
 
             Component.onCompleted: {
@@ -360,7 +217,7 @@ Window {
                             onClicked: {
                                 particleSystem.clear();
                                 renderTimer.stop();
-                                canvas.requestPaint();
+                                renderer.update();
                             }
 
                             background: Rectangle {

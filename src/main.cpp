@@ -1,6 +1,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include "particle_system.h"
+#include "particle_renderer.h"
 
 int main(int argc, char *argv[])
 {
@@ -8,6 +9,7 @@ int main(int argc, char *argv[])
 
     // Register C++ types for QML
     qmlRegisterType<ParticleSystem>("ParticleSystem", 1, 0, "ParticleSystem");
+    qmlRegisterType<ParticleRenderer>("ParticleRenderer", 1, 0, "ParticleRenderer");
 
     QQmlApplicationEngine engine;
     QObject::connect(
