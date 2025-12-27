@@ -24,6 +24,7 @@ class ParticleSystem : public QObject {
   Q_INVOKABLE void stop();
   Q_INVOKABLE void addParticles(int count);
   Q_INVOKABLE void clear();
+  Q_INVOKABLE void throwUpParticles();
   Q_INVOKABLE QVariantList getParticleData();
 
   int particleCount() const { return particles_.size(); }

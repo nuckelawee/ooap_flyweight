@@ -229,6 +229,26 @@ Window {
                         }
 
                         Button {
+                            text: "Throw Up Particles"
+                            Layout.fillWidth: true
+                            onClicked: {
+                                particleSystem.throwUpParticles();
+                            }
+
+                            background: Rectangle {
+                                color: parent.pressed ? "#27ae60" : "#2ecc71"
+                                radius: 5
+                            }
+
+                            contentItem: Text {
+                                text: parent.text
+                                color: "#ffffff"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                        }
+
+                        Button {
                             text: "Clear All"
                             Layout.fillWidth: true
                             onClicked: {

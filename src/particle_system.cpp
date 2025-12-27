@@ -83,6 +83,24 @@ void ParticleSystem::clear() {
   emit memoryUsageMBChanged();
 }
 
+void ParticleSystem::throwUpParticles() {
+  QRandomGenerator* rng = QRandomGenerator::global();
+
+  // Consider particles as "fallen" if they are in the bottom 20% of the canvas
+  float threshold_y = canvas_height_ * 0.8f;
+
+  for (auto& particle : particles_) {
+    if (particle->y() > threshold_y) {
+      // Give particles a strong upward velocity
+      float new_vx = -80.0f + rng->generateDouble() * 160.0f;  // Random horizontal velocity
+      float new_vy = -300.0f - rng->generateDouble() * 200.0f;  // Strong upward velocity (-300 to -500)
+
+      particle->set_vx(new_vx);
+      particle->set_vy(new_vy);
+    }
+  }
+}
+
 QVariantList ParticleSystem::getParticleData() {
   QVariantList data;
   for (const auto& particle : particles_) {

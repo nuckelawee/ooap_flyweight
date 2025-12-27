@@ -26,6 +26,10 @@ class Particle {
   float radius() const { return radius_; }
   ParticleShape shape() const { return shape_; }
 
+  // Setters for velocity
+  void set_vx(float vx) { vx_ = vx; }
+  void set_vy(float vy) { vy_ = vy; }
+
  private:
   // Extrinsic state (unique per particle) - позиция и скорость
   float x_, y_;
