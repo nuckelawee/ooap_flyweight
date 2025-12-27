@@ -2,13 +2,14 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import ParticleSystem 1.0
+import ParticleRenderer 1.0
 
 Window {
     id: root
     width: 1200
     height: 800
     visible: true
-    title: "Particle Simulation - Without Flyweight Pattern"
+    title: "Particle Simulation - WITHOUT Flyweight Pattern"
 
     ParticleSystem {
         id: particleSystem
@@ -18,70 +19,32 @@ Window {
         anchors.fill: parent
         spacing: 0
 
-        // Main canvas area
-        Rectangle {
+        // Main rendering area - C++ QPainter renderer (FAST!)
+        ParticleRenderer {
+            id: renderer
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: "#f5f5f5"
+            particleSystem: particleSystem
 
-            Canvas {
-                id: canvas
-                anchors.fill: parent
-
-                onWidthChanged: {
-                    if (width > 0 && height > 0) {
-                        particleSystem.start(width, height);
-                    }
+            onWidthChanged: {
+                if (width > 0 && height > 0) {
+                    particleSystem.start(width, height);
                 }
+            }
 
-                onHeightChanged: {
-                    if (width > 0 && height > 0) {
-                        particleSystem.start(width, height);
-                    }
+            onHeightChanged: {
+                if (width > 0 && height > 0) {
+                    particleSystem.start(width, height);
                 }
+            }
 
-                onPaint: {
-                    var ctx = getContext("2d");
-                    ctx.clearRect(0, 0, width, height);
-
-                    var particles = particleSystem.getParticleData();
-
-                    for (var i = 0; i < particles.length; i++) {
-                        var p = particles[i];
-                        ctx.fillStyle = p.color;
-                        ctx.strokeStyle = Qt.darker(p.color, 1.5);
-                        ctx.lineWidth = 2;
-
-                        ctx.beginPath();
-
-                        switch(p.shape) {
-                            case 0: // Circle
-                                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                                break;
-                            case 1: // Square
-                                ctx.rect(p.x - p.radius, p.y - p.radius,
-                                        p.radius * 2, p.radius * 2);
-                                break;
-                            case 2: // Triangle
-                                ctx.moveTo(p.x, p.y - p.radius);
-                                ctx.lineTo(p.x - p.radius, p.y + p.radius);
-                                ctx.lineTo(p.x + p.radius, p.y + p.radius);
-                                ctx.closePath();
-                                break;
-                        }
-
-                        ctx.fill();
-                        ctx.stroke();
-                    }
-                }
-
-                Timer {
-                    id: renderTimer
-                    interval: 16
-                    running: false
-                    repeat: true
-                    onTriggered: canvas.requestPaint()
-                }
+            // Обновляем рендер каждый кадр
+            Timer {
+                id: renderTimer
+                interval: 16  // ~60 FPS
+                running: false
+                repeat: true
+                onTriggered: renderer.update()
             }
 
             Component.onCompleted: {
@@ -254,7 +217,7 @@ Window {
                             onClicked: {
                                 particleSystem.clear();
                                 renderTimer.stop();
-                                canvas.requestPaint();
+                                renderer.update();
                             }
 
                             background: Rectangle {
@@ -334,7 +297,7 @@ Window {
                 }
 
                 Text {
-                    text: "каждая частица хранит\nВСЕ данные (цвет, размер, форма)"
+                    text: "каждая частица хранит\nВСЕ данные (путь к картинке)\nдублирование QString!"
                     font.pixelSize: 11
                     color: "#666666"
                     horizontalAlignment: Text.AlignHCenter

@@ -1,19 +1,12 @@
 #ifndef PARTICLE_H
 #define PARTICLE_H
 
-#include <QColor>
 #include <QString>
-
-enum class ParticleShape {
-  Circle,
-  Square,
-  Triangle
-};
 
 class Particle {
  public:
   Particle(float x, float y, float vx, float vy,
-           const QColor& color, float radius, ParticleShape shape);
+           const QString& image_path, float radius);
 
   void Update(float delta_time, float width, float height);
 
@@ -22,9 +15,8 @@ class Particle {
   float y() const { return y_; }
   float vx() const { return vx_; }
   float vy() const { return vy_; }
-  QColor color() const { return color_; }
+  QString image_path() const { return image_path_; }
   float radius() const { return radius_; }
-  ParticleShape shape() const { return shape_; }
 
   // Setters for velocity
   void set_vx(float vx) { vx_ = vx; }
@@ -35,11 +27,10 @@ class Particle {
   float x_, y_;
   float vx_, vy_;
 
-  // Intrinsic state (could be shared) - цвет, размер, форма
-  // В версии БЕЗ flyweight каждая частица хранит эти данные
-  QColor color_;
+  // Intrinsic state (could be shared) - путь к изображению и размер
+  // В версии БЕЗ flyweight каждая частица хранит эти данные (дублирование!)
+  QString image_path_;
   float radius_;
-  ParticleShape shape_;
 
   // Physics constants
   static constexpr float kGravity = 200.0f;

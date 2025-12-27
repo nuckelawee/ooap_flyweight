@@ -2,9 +2,9 @@
 #include <algorithm>
 
 Particle::Particle(float x, float y, float vx, float vy,
-                   const QColor& color, float radius, ParticleShape shape)
+                   const QString& image_path, float radius)
     : x_(x), y_(y), vx_(vx), vy_(vy),
-      color_(color), radius_(radius), shape_(shape) {
+      image_path_(image_path), radius_(radius) {
 }
 
 void Particle::Update(float delta_time, float width, float height) {

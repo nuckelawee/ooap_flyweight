@@ -32,6 +32,9 @@ class ParticleSystem : public QObject {
   double memoryUsageMB() const { return memory_usage_mb_; }
   int objectCount() const { return particles_.size(); }  // Без flyweight = количество частиц
 
+  // Прямой доступ к частицам для ParticleRenderer (без копирования!)
+  const std::vector<std::unique_ptr<Particle>>& particles() const { return particles_; }
+
  signals:
   void particleCountChanged();
   void fpsChanged();
